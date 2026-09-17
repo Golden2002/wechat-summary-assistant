@@ -596,6 +596,30 @@ REM 列出全部内置模板及说明（不碰微信）
 `collect_probe.py` 会打印每一步的「已读条数 / 本步新增 / 翻页方式」，
 以及最终覆盖到的时间段、时间分隔条、发言人分布 —— 怀疑「消息读不全」时先跑它。
 
+### 发布到 GitHub（网络受限时）
+
+部分网络环境下 `github.com:443` 的 TLS 握手会被重置，而 `api.github.com` 正常 ——
+此时 `git push` 必然失败。`tools/publish_to_github.ps1` 走 **Git Data API** 发布：
+
+```powershell
+.\tools\publish_to_github.ps1                 # 发布当前 HEAD
+.\tools\publish_to_github.ps1 -CreateRepo     # 仓库不存在时自动创建
+```
+
+它的做法不是"另建一个提交"，而是把本地 HEAD 的 blob → tree → commit **原样重建**：
+
+- blob 内容取自 **git 对象库**（`git cat-file blob <sha>`），不是工作区文件 ——
+  工作区可能因 `autocrlf` / `.gitattributes` 带 CRLF，直接读字节会算出不同的 blob SHA；
+- commit 带上真实的 **父提交**、author/committer 与时间戳；
+- 结果：远端 commit SHA 与本地**完全一致**，等价于一次正常 push。
+
+> 踩过的三个坑（都写进脚本注释了）：空仓库不能用 Git Data API（要先初始化）、
+> PowerShell 的 `$args` 是自动变量不能赋值、`git log` 的多行输出要 `-join "`n"`。
+
+### 无障碍闸门诊断 / 热激活
+
+见 [TROUBLESHOOTING §1](TROUBLESHOOTING.md#1-连接失败未找到已登录的客户端主窗口)。
+
 ---
 
 ## 附：本项目对原项目的改动摘要

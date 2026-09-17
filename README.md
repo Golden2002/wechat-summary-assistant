@@ -134,7 +134,8 @@ wechat_summary/
 ├─ check_env.py             环境自检（--live 可实连微信）
 ├─ tests/                   4 套离线测试（不需要微信运行）
 ├─ tools/collect_probe.py   真机抓取验证（不调用 AI、不发送任何消息）
-└─ docs/                    使用 / 排障 / 技术 / 调研文档
+├─ tools/publish_to_github.ps1  发布到 GitHub（走 API，绕过 github.com 不可达）
+└─ docs/                    使用 / 排障 / 技术 / 来源 / 调研文档
 ```
 
 ---
