@@ -1,0 +1,13 @@
+# 默认按 LF 存储，检出时按平台转换
+* text=auto eol=lf
+
+# Windows 批处理必须用 CRLF，否则可能执行异常
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制
+*.png binary
+*.ico binary
+*.jpg binary
+*.gif binary
+*.exe binary

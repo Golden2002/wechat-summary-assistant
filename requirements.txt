@@ -1,0 +1,18 @@
+# 微信群聊总结助手 —— 运行时依赖（微信 4.x / wxauto4 适配版）
+#
+# 重要：wxauto4 的 Requires-Python 是 <3.14,>=3.9
+#       Python 3.14 没有任何可用 wheel，安装必然失败。
+#       请使用 Python 3.12（推荐）或 3.9 ~ 3.13。
+#
+# 安装：
+#   py -3.12 -m venv .venv
+#   .venv\Scripts\python.exe -m pip install -r requirements.txt
+
+wxauto4>=41.1.7        # 微信 4.x 桌面端 UI 自动化（原版依赖的老 wxauto 已从 PyPI 下架）
+openai>=1.30.0         # 调用 DeepSeek / Kimi / 通义千问等 OpenAI 兼容接口
+loguru>=0.7.2          # 日志
+PySide6>=6.6.0         # 图形界面
+
+# ---- 以下仅打包发布时需要，日常运行不必安装 ----
+# pyinstaller>=6.0
+# pyarmor>=8.0

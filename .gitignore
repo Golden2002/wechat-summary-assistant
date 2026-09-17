@@ -1,0 +1,31 @@
+# 虚拟环境
+.venv/
+venv/
+
+# 运行时产物
+logs/
+summary/
+config/ai_config.json
+config/sent_summaries.json
+config/ai_config.backup-*.json
+*.log
+
+# 凭据：绝对不要提交
+*access_token*.txt
+*token*.txt
+*.key
+.env
+
+# wxauto4 自己写的日志目录
+wxauto_logs/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# 打包产物
+build/
+dist/
+*.spec
