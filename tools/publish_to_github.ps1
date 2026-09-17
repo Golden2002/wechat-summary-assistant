@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 <#
 .SYNOPSIS
     通过 GitHub REST API 把当前 git 仓库的 HEAD 发布到 GitHub。
@@ -232,7 +232,9 @@ $repoBody = New-TempJson -Json (@{ default_branch = $Branch } | ConvertTo-Json -
 Invoke-Gh -Method PATCH -Url "https://api.github.com/repos/$Owner/$Repo" -BodyFile $repoBody | Out-Null
 
 # ---- 6. 让本地仓库"看起来"是同步的 -----------------------------------------
-git remote remove origin 2>$null
+# 注意：不能直接 `git remote remove origin` —— 没有 origin 时它会写 stderr，
+# 而 $ErrorActionPreference = "Stop" 会把它当成致命错误。
+if (@(git remote) -contains "origin") { git remote remove origin }
 git remote add origin "https://github.com/$Owner/$Repo.git"
 git update-ref "refs/remotes/origin/$Branch" $commit.sha
 Write-Host "已设置 origin 与远端跟踪分支（本机无法 git push，请用本脚本再次发布）" -ForegroundColor DarkGray
