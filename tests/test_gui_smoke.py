@@ -49,7 +49,7 @@ def check(label: str, condition: bool, extra: object = "") -> None:
 
 #: 版本演进说明：这里原来列的是三套旧模板名
 #: （好友私聊 · 每日总结 / 医学生转行 · 医疗+AI 交流群日报 / 技术项目协作群 · 协作纪要）。
-#: 它们已被 18 套新模板取代，并在加载配置时自动摘除（见 RETIRED_PROMPT_NAMES），
+#: 它们已被 19 套新模板取代，并在加载配置时自动摘除（见 RETIRED_PROMPT_NAMES），
 #: 所以这份「原版」冒烟测试同步换成新名字；新功能的覆盖见 test_gui_smoke_v2.py。
 EXPECTED_TEMPLATES = [
     "通用群聊总结（原版）",

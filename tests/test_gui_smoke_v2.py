@@ -43,7 +43,7 @@ def main() -> int:
         window.main_prompt_combo.itemText(i).startswith("——")
         for i in range(window.main_prompt_combo.count())
     ))
-    check("模板下拉框含 18 套内置模板",
+    check("模板下拉框含 19 套内置模板",
           sum(1 for n in core.PROMPT_PRESETS if window.main_prompt_combo.findText(n) >= 0) == len(core.PROMPT_PRESETS))
 
     # 时间范围：三条路径

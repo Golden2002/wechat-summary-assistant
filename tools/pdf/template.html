@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="{{LANG}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="markdown-to-pdf">
+<meta name="dcterms.created" content="{{DATE}}">
+<title>{{TITLE}}</title>
+<!-- 同目录相对路径：file:// 打开时可用。全部字体来自系统，无任何网络请求。 -->
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- ══════════════════════════ 封面 ══════════════════════════
+     加 .cover-bleed 表示渲染器支持 @page :first 全出血（Chromium 支持）。
+     若去掉该类，色带会收在版心内，仍是完整可用的扉页。 -->
+<section class="cover cover-bleed" id="cover">
+  <div class="cover-inner">
+
+    <p class="cover-kicker">{{PROJECT}}</p>
+
+    <h1 class="cover-title">{{TITLE}}</h1>
+
+    <p class="cover-subtitle">{{SUBTITLE}}</p>
+
+    <dl class="cover-meta">
+      <div>
+        <dt>版本 / Version</dt>
+        <dd>{{VERSION}}</dd>
+      </div>
+      <div>
+        <dt>日期 / Date</dt>
+        <dd>{{DATE}}</dd>
+      </div>
+      <div>
+        <dt>项目 / Project</dt>
+        <dd><code>{{PROJECT}}</code></dd>
+      </div>
+    </dl>
+
+    <div class="cover-foot">
+      <span>技术规格说明书</span>
+      <span>本文档由 Markdown 自动排版生成</span>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════ 目录 ══════════════════════════
+     生成器产出完整的 <nav class="toc">…</nav>，形如：
+       <nav class="toc">
+         <h2 class="toc-title">目录</h2>
+         <ol class="toc-l1">
+           <li><a href="#c1"><span class="toc-text">1. 总体设计</span>
+               <span class="toc-page"></span></a>
+             <ol class="toc-l2">
+               <li><a href="#c1-1"><span class="toc-text">目标</span>
+                   <span class="toc-page"></span></a></li>
+             </ol>
+           </li>
+         </ol>
+       </nav>
+     页码可留空（.toc-page:empty 会自动隐藏），也可由 target-counter 生成。 -->
+{{TOC}}
+
+<!-- ══════════════════════════ 正文 ══════════════════════════ -->
+<main class="content">
+{{CONTENT}}
+</main>
+
+</body>
+</html>

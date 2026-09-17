@@ -560,7 +560,7 @@ def main() -> int:
 
     print()
     print("=== 20) 系统提示词模板 ===")
-    check("内置模板数 = 18", len(core.PROMPT_PRESETS) == 18, len(core.PROMPT_PRESETS))
+    check("内置模板数 = 19", len(core.PROMPT_PRESETS) == 19, len(core.PROMPT_PRESETS))
     check("默认模板名在内置模板中", core.DEFAULT_PROMPT_NAME in core.PROMPT_PRESETS)
     check("分类齐全", set(core.PROMPT_CATEGORY.values()) == set(core.CATEGORY_ORDER),
           sorted(set(core.PROMPT_CATEGORY.values())))

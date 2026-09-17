@@ -618,7 +618,7 @@ class AIConfig:
     def prompt_names_by_category(self) -> Dict[str, List[str]]:
         """``{分类: [模板名]}``，内置分类按固定顺序，自定义模板归入「我的模板」。
 
-        为什么不让下拉框就是一个平铺列表：模板从 4 套涨到 18 套以后，平铺列表
+        为什么不让下拉框就是一个平铺列表：模板从 4 套涨到 19 套以后，平铺列表
         根本找不到想要的那一套。分类 + 每套一句话说明才能选得动。
         """
         grouped: Dict[str, List[str]] = {cat: [] for cat in CATEGORY_ORDER}

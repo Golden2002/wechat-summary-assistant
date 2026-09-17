@@ -41,6 +41,16 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# 让 PowerShell 按 UTF-8 解读原生命令（git / curl）的输出。
+# 否则中文路径与中文提交信息会被按系统代码页解码成乱码。
+$prevConsoleEncoding = $null
+try {
+    $prevConsoleEncoding = [Console]::OutputEncoding
+    [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+} catch {
+    # 某些宿主没有控制台，设置会失败；此时继续执行即可
+}
+
 # ---- 定位仓库根（脚本在 tools/ 下） ----------------------------------------
 $repoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Push-Location $repoRoot
@@ -48,6 +58,9 @@ $tmpFiles = @()
 
 function Cleanup {
     foreach ($f in $tmpFiles) { Remove-Item $f -Force -ErrorAction SilentlyContinue }
+    if ($prevConsoleEncoding) {
+        try { [Console]::OutputEncoding = $prevConsoleEncoding } catch { }
+    }
     Pop-Location
 }
 trap { Write-Host "`n[ERROR] $_" -ForegroundColor Red; Cleanup; exit 1 }
@@ -153,34 +166,59 @@ $committer = Parse-Ident $committerLine
 $message = ((git log -1 --pretty=%B) -join "`n")
 Write-Host "本地 HEAD: $headSha" -ForegroundColor DarkGray
 
-$files = @(git ls-files)
+# ---- 3.5 取出 HEAD 的完整文件清单（含中文路径） ----------------------------
+# 不能直接用 `git ls-files`：默认的 core.quotePath 会把非 ASCII 路径转义成
+# `"docs/\346\274\224..."` 这种形式，导致后续 `git cat-file` 取不到内容，
+# 最终把一个**空 blob** 传上去（曾经真的发生过，远端多了一个 0 字节的截图）。
+#
+# 这里改用 `git ls-tree -r -z`：
+#   * 路径以 NUL 分隔，且**不做任何转义**；
+#   * 顺带直接拿到每个文件的 blob SHA，不必再执行 `git rev-parse "HEAD:<中文路径>"`。
+# 输出先落盘再按 UTF-8 解码，避免受控制台代码页影响。
+$lsTmp = Join-Path $env:TEMP ("ghls_" + [guid]::NewGuid().ToString('N') + ".bin")
+$tmpFiles += $lsTmp
+cmd /c "git ls-tree -r -z HEAD > `"$lsTmp`""
+if ($LASTEXITCODE -ne 0) { throw "git ls-tree 执行失败" }
+$lsText = [System.Text.Encoding]::UTF8.GetString([System.IO.File]::ReadAllBytes($lsTmp))
+
+$files = @()   # @{ path; mode; sha }
+foreach ($record in ($lsText -split "`0")) {
+    if (-not $record) { continue }
+    if ($record -match '^(?<mode>\d{6})\s+(?<type>\w+)\s+(?<sha>[0-9a-f]{40})\t(?<path>.*)$') {
+        $files += @{ path = $Matches['path']; mode = $Matches['mode']; sha = $Matches['sha'] }
+    }
+}
+if ($files.Count -eq 0) { throw "无法解析 git ls-tree 的输出" }
 Write-Host "待上传文件: $($files.Count) 个" -ForegroundColor Cyan
 
 # ---- 4. 逐个创建 blob -------------------------------------------------------
-# 关键：内容必须取自 **git 对象库**（`git cat-file blob <sha>`），而不是工作区文件。
-# 工作区文件可能被 autocrlf / .gitattributes 影响而带 CRLF，直接读字节会算出不同的
-# blob SHA，进而导致 tree / commit SHA 与本地不一致（不再是"同一棵提交树"）。
-# 这里用 cmd 的重定向把 git 输出原样落盘 —— PowerShell 的 > 会破坏二进制。
+# 内容必须取自 **git 对象库**（`git cat-file blob <sha>`），而不是工作区文件：
+# 工作区文件可能被 autocrlf / .gitattributes 影响而带 CRLF，直接读字节会算出
+# 不同的 blob SHA，进而导致 tree / commit SHA 与本地不一致。
+# 用 cmd 的重定向原样落盘 —— PowerShell 的 > 会破坏二进制内容。
 $treeEntries = @()
 $i = 0
 foreach ($f in $files) {
     $i++
-    $oldSha = (git rev-parse "HEAD:$f").Trim()
+    $oldSha = $f.sha
     $tmpBlob = Join-Path $env:TEMP ("ghblob_" + [guid]::NewGuid().ToString('N') + ".bin")
     $tmpFiles += $tmpBlob
     cmd /c "git cat-file blob $oldSha > `"$tmpBlob`""
-    if (-not (Test-Path $tmpBlob)) { throw "无法从 git 取出 $f" }
+    if ($LASTEXITCODE -ne 0) { throw "git cat-file blob 失败：$($f.path)（$oldSha）" }
+
     $b64 = [Convert]::ToBase64String([System.IO.File]::ReadAllBytes($tmpBlob))
     Remove-Item $tmpBlob -Force -ErrorAction SilentlyContinue
 
     $body = New-TempJson -Json (@{ content = $b64; encoding = "base64" } | ConvertTo-Json -Compress)
     $raw = Invoke-Gh -Method POST -Url "https://api.github.com/repos/$Owner/$Repo/git/blobs" -BodyFile $body
     $blob = $raw | ConvertFrom-Json
-    if (-not $blob.sha) { throw "创建 blob 失败: $f`n响应: $raw" }
+    if (-not $blob.sha) { throw "创建 blob 失败: $($f.path)`n响应: $raw" }
     if ($oldSha -ne $blob.sha) {
-        Write-Host "  注意: $f 的 blob 与本地不一致（本地 $oldSha / 远端 $($blob.sha)）" -ForegroundColor Yellow
+        # blob 不一致就说明"原样重建"这件事没有做到，继续下去只会得到一个
+        # 与本地历史对不上的远端提交 —— 直接失败，比悄悄传错更安全。
+        throw "文件内容与本地 git 对象不一致：$($f.path)`n  本地 blob: $oldSha`n  远端 blob: $($blob.sha)`n  （通常是路径含非 ASCII 字符或换行被改写所致）"
     }
-    $treeEntries += @{ path = $f; mode = "100644"; type = "blob"; sha = $blob.sha }
+    $treeEntries += @{ path = $f.path; mode = $f.mode; type = "blob"; sha = $blob.sha }
     if ($i % 5 -eq 0 -or $i -eq $files.Count) { Write-Host "  blobs: $i/$($files.Count)" -ForegroundColor DarkGray }
 }
 

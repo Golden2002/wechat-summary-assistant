@@ -5,9 +5,11 @@
 *.bat text eol=crlf
 *.cmd text eol=crlf
 
-# 二进制
+# 二进制（必须显式声明，避免 text=auto 误判后按行尾转换而损坏文件）
 *.png binary
 *.ico binary
 *.jpg binary
 *.gif binary
 *.exe binary
+*.pdf binary
+*.zip binary

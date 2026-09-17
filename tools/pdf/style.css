@@ -1,0 +1,1171 @@
+/* ============================================================================
+   style.css — 技术规格书排版系统 (A4 / 打印级 / headless Chromium)
+   ----------------------------------------------------------------------------
+   设计目标：工程手册级排版。冷静、克制、信息密度高但不拥挤。
+   一个强调色，克制使用；表格与标题处理优先于装饰。
+
+   ── 调色板 (Palette) ────────────────────────────────────────────────────────
+   强调色 Accent      #1B4F8A  深钢蓝 — 唯一品牌色，用于 h2 装置 / 标号 / 表头 /
+                               链接 / 有序列表标记 / 代码左条
+   强调色深 Accent-D  #143A66  悬停 / 强调文字的深色变体
+   强调色浅 Accent-L  #6E93BC  次级标记（TOC level-2、代码语言标签）
+   强调色晕 Accent-T  #EAF0F7  h2 标号底、内联代码底、表头底
+   正文 Text          #1A1F26  近黑（不用纯黑，减少 10.5pt 中文的视觉重量）
+   标题 Text-Strong   #10161F  比正文更深，标题才有"锚"感
+   次级 Secondary     #59626E  副标题、图注、元信息标签
+   弱化 Muted         #8A929C  页码、注释
+   细分线 Hairline    #E2E6EB  表格内部横线、hr、卡片描边
+   卡片底 Surface     #F6F8FA  代码块 / 引用卡底色
+   斑马纹 Zebra       #FAFBFC  表格偶数行
+   警示 Warn          #B4690E  琥珀 — 提示条左边框 / "缺"标记
+   警示深 Warn-D      #8F5309  警示文字（对 #FDF8EF 对比度 5.6:1）
+   警示底 Warn-Bg     #FDF8EF
+   成功 Ok            #2F7D4F  墨绿 — "有/支持"标记
+   危险 Bad           #B3392E  砖红 — "无/不支持"标记
+   （Ok / Bad 是语义状态色，不是装饰色：全文只在表格 ✔/❌ 列出现。）
+
+   ── 字号阶梯 (Type scale, 1.25 ratio) ───────────────────────────────────────
+   页标题 h1        23pt / 1.30 / 600     小节分隔式大标题
+   章标题 h2        15pt / 1.45 / 700     带色块标号 + 短强调下划线
+   节标题 h3        12pt / 1.55 / 700     左侧强调竖条
+   小标题 h4        10.5pt/1.60 / 700     纯加粗，安静
+   正文 body        10.5pt/1.80 / 400     中文正文（1.8 行距是中文可读性底线）
+   引用 blockquote  10pt / 1.70 / 400
+   代码 pre          9pt / 1.45 / 400     等宽
+   内联 code         8.5pt (0.82em)
+   表头 th          10pt / 1.55 / 700
+   表体 td          10pt / 1.65 / 400
+   语言标签          7pt / 1.00 / 600
+   页眉页脚           8pt / 1.00 / 400
+
+   ── 间距节奏 (Spacing, 4pt base) ────────────────────────────────────────────
+   --sp-1  2mm   行内元素呼吸
+   --sp-2  4mm   块间基本单位
+   --sp-3  6mm
+   --sp-4  8mm   标题上方留白（章级）
+   --sp-5 12mm   h2 大留白
+   --sp-6 18mm   封面 / 扉页级留白
+   垂直节奏原则：标题的 margin-top 恒大于 margin-bottom（约 2:1），
+   让标题"吸附"到它管辖的内容上，而不是浮在两块内容中间。
+
+   ── 已验证的 Chromium 打印能力 ─────────────────────────────────────────────
+   ✓ @page 页边距框 @top-* / @bottom-*（可含 counter(page) / counter(pages)）
+   ✓ @page :first 全出血（margin: 0）—— 封面无页眉页脚
+   ✓ thead { display: table-header-group } 长表跨页重复表头
+   ✓ break-inside / break-before / break-after
+   ✗ leader('.')  —— Chromium 未实现，目录改用"右对齐页码列"
+   ✗ string-set / string() —— 未实现，页眉放不了"当前章节名"；
+     改用生成器替换 {{RUNNING_TITLE}}（静态文档标题），见 @page @top-right
+
+   维护提示：想整体换色，只改下面 :root 的 --accent 及三个派生值即可；
+   派生值用 color-mix() 生成，因此无需手工配对深浅色。
+   ========================================================================= */
+
+/* ───────────────────────────── 设计变量 ───────────────────────────── */
+:root {
+  /* 颜色 */
+  --accent: #1b4f8a;
+  --accent-d: #143a66;
+  --accent-l: #6e93bc;
+  --accent-t: #eaf0f7;
+
+  --text: #1a1f26;
+  --text-strong: #10161f;
+  --secondary: #59626e;
+  --muted: #8a929c;
+
+  --hairline: #e2e6eb;
+  --hairline-strong: #c9d0d8;
+  --surface: #f6f8fa;
+  --zebra: #fafbfc;
+
+  --warn: #b4690e;
+  --warn-d: #8f5309;
+  --warn-bg: #fdf8ef;
+  --ok: #2f7d4f;
+  --bad: #b3392e;
+
+  /* 字体族 */
+  --font-sans: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+    "Noto Sans CJK SC", "Source Han Sans SC", "Hiragino Sans GB", sans-serif;
+  --font-serif: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", SimSun,
+    serif;
+  --font-mono: "Cascadia Mono", "Cascadia Code", Consolas, "JetBrains Mono",
+    "Sarasa Mono SC", "Microsoft YaHei UI", "Courier New", monospace;
+  /* 颜文字只在需要的元素上兜底（避免全文字体回退把中文推给日文字形） */
+  --font-emoji: "Segoe UI Emoji", "Segoe UI Symbol", "Microsoft YaHei UI",
+    sans-serif;
+
+  /* 间距 */
+  --sp-1: 2mm;
+  --sp-2: 4mm;
+  --sp-3: 6mm;
+  --sp-4: 8mm;
+  --sp-5: 12mm;
+  --sp-6: 18mm;
+
+  /* 其它 */
+  --rule: 0.35mm; /* 表格粗横线 ≈ 1pt */
+  --radius: 3pt;
+  --code-gutter: 1.15mm; /* 代码块左侧强调条宽度 */
+}
+
+/* ───────────────────────────── 基础重置 ───────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 10.5pt;
+  line-height: 1.8;
+  color: var(--text);
+  background: #fff;
+  text-align: justify;
+  text-justify: inter-ideograph;
+  /* 中文不用 break-all（会切断中文词组）；长 URL / 长路径靠 overflow-wrap 兜底 */
+  word-break: normal;
+  overflow-wrap: anywhere;
+  line-break: normal;
+  orphans: 2;
+  widows: 2;
+  -webkit-font-smoothing: antialiased;
+}
+
+p {
+  margin: 0 0 var(--sp-2);
+}
+
+/* 链接与行内代码里的长 URL / 长路径必须能在任意字符处断开。
+   只用 overflow-wrap:anywhere 不够：Chrome 对 <a> 内联元素不会在
+   任意位置断，长 URL 会顶出版心（已实测）。这里显式 break-all，
+   只作用于链接/代码这类"技术串"，不影响正文中文断行。 */
+a,
+.content code,
+kbd {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+/* ───────────────────────────── 页与页边距框 ───────────────────────────── */
+/* 下边距 22mm 给 @bottom-center 的页码留位；上边距 20mm 给页眉留位。 */
+@page {
+  size: A4 portrait;
+  margin: 20mm 18mm 22mm 18mm;
+
+  /* 页眉：由生成器替换 {{RUNNING_TITLE}}（Chromium 不支持 string-set，
+     无法放动态章节名，只能是静态标题） */
+  @top-right {
+    /* 页眉文字：由生成器做字面量替换（与 HTML 模板同一套 {{…}} 约定）。
+       必须保留外层双引号 —— CSS 的 content 需要一个字符串字面量，
+       生成器换进去的也只是纯文本，不要带引号或反斜杠。 */
+    content: "{{RUNNING_TITLE}}";
+    font-family: var(--font-sans);
+    font-size: 8pt;
+    font-weight: 400;
+    color: var(--muted);
+    vertical-align: bottom;
+    padding-bottom: 2mm;
+  }
+  /* 页脚：细线 + 页码 */
+  @bottom-center {
+    content: counter(page) " / " counter(pages);
+    font-family: var(--font-sans);
+    font-size: 8pt;
+    color: var(--muted);
+    vertical-align: top;
+    padding-top: 3mm;
+    border-top: 0.25pt solid var(--hairline);
+    width: 100%;
+  }
+}
+
+/* 封面全出血：第一页零边距 → 无页眉无页脚，色块可以顶到纸边。
+   这个规则本身是安全的：即使不生效，封面在普通边距下也成立（见 .cover）。 */
+@page :first {
+  margin: 0;
+
+  @top-right {
+    content: none;
+  }
+  @bottom-center {
+    content: none;
+    border-top: 0;
+  }
+}
+
+/* 分页控制工具类 —— 生成器可直接在任意块上使用 */
+.page-break {
+  break-before: page;
+  page-break-before: always; /* 旧别名，Chromium 仍认 */
+}
+
+.page-break-after {
+  break-after: page;
+  page-break-after: always;
+}
+
+/* 不希望被跨页切断的块：代码块、引用卡、短表格、图 */
+.code-block,
+blockquote,
+figure,
+.toc {
+  break-inside: avoid;
+}
+
+/* 行级不可切 */
+tr,
+li {
+  break-inside: avoid;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  break-after: avoid; /* 标题后紧接内容，不留在页底 */
+  break-inside: avoid;
+  page-break-after: avoid;
+}
+
+/* ───────────────────────────── 封面 ───────────────────────────── */
+/* 双轨设计：@page :first 生效时页边距为 0，色带真正顶到纸边；
+   若某个渲染器忽略 @page :first，.cover 会落在普通版心内，
+   此时同一套留白读起来仍然是一张"页内扉页" —— 两种情形都成立，
+   不会出现半截色块。 */
+.cover {
+  /* 假定页面已有 18mm 边距时抵消掉它；配合 --bleed 的双向 padding 技巧，
+     盒宽在两种情形下都等于可用版心宽度，不会横向溢出。 */
+  --bleed: 18mm;
+  --pad-x: 22mm; /* 期望的纸边到文字的距离 */
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* 高度留出 6mm 余量：封面内容用 margin-top:auto 推到下半页，
+     若严格等于 100vh，flex 内容一旦超出就会把最后的色带挤出页面
+     （已实测：底部队列栏被裁掉）。 */
+  height: calc(100vh - 6mm);
+  padding: 0;
+  color: var(--text-strong);
+  /* 不再使用 break-after —— 目录自带 break-before:page。
+     两个都写会在封面刚好填满一页时产生空白页。 */
+  overflow: hidden;
+}
+
+/* 零边距（page :first 生效）时 --bleed 归零：文字回到纸边 + 22mm 留白，
+   色带铺满整幅纸宽。若 :first 未生效，--bleed=18mm 抵消页边距，
+   色带铺满版心、文字距版心边 22mm。两者都干净。 */
+.cover.cover-bleed {
+  --bleed: 0mm;
+}
+
+.cover::before {
+  /* 顶部深蓝色带 —— 全篇唯一的"重"色块 */
+  content: "";
+  display: block;
+  height: 13mm;
+  background: var(--accent);
+  flex: 0 0 auto;
+}
+
+/* 双向负 margin 让色带在两种 --bleed 取值下都铺到版心/纸边 */
+.cover-band {
+  margin: 0 calc(-1 * var(--bleed));
+}
+
+.cover-inner {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  padding: 24mm calc(var(--bleed) + var(--pad-x)) 0;
+  min-height: 0;
+}
+
+.cover-kicker {
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 var(--sp-2);
+}
+
+.cover-title {
+  font-size: 30pt;
+  line-height: 1.22;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-strong);
+  margin: var(--sp-5) 0 0;
+  text-align: left;
+  break-after: avoid;
+}
+
+/* 标题下的强装置：短而厚的强调条 */
+.cover-title::after {
+  content: "";
+  display: block;
+  width: 42mm;
+  height: 1.6mm;
+  margin-top: 7mm;
+  background: var(--accent);
+}
+
+.cover-subtitle {
+  font-family: var(--font-serif);
+  font-size: 13pt;
+  line-height: 1.7;
+  font-weight: 400;
+  color: var(--secondary);
+  margin: var(--sp-3) 0 0;
+  text-align: left;
+  /* 衬线体在无思源宋体的机器上回退到 SimSun —— 只用于这一行，可控 */
+  max-width: 120mm;
+}
+
+.cover-meta {
+  margin-top: auto; /* 把元信息块压到底部 */
+  padding-top: var(--sp-5);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3) var(--sp-6);
+  border-top: 0.35mm solid var(--hairline-strong);
+}
+
+.cover-meta dt {
+  font-size: 7.5pt;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 1mm;
+}
+
+.cover-meta dd {
+  margin: 0;
+  font-size: 10.5pt;
+  font-weight: 600;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.cover-foot {
+  flex: 0 0 auto;
+  margin-top: var(--sp-5);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--sp-3);
+  font-size: 8.5pt;
+  color: var(--muted);
+}
+
+.cover-foot code {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--secondary);
+  font-weight: 600;
+}
+
+/* 封面底部色带：与顶部呼应，收住整页 */
+.cover::after {
+  content: "";
+  display: block;
+  height: 4mm;
+  background: var(--accent-t);
+  border-top: 0.35mm solid var(--accent);
+  flex: 0 0 auto;
+}
+
+/* ───────────────────────────── 目录 ───────────────────────────── */
+/* Chromium 未实现 leader('.')，因此用"文题 + 右对齐页码列"的表格化布局。
+   条目换行时页码仍钉在右列，不会散架。 */
+.toc {
+  break-before: page;
+  page-break-before: always;
+  margin: 0 0 var(--sp-5);
+}
+
+.toc-title {
+  font-size: 15pt;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin: 0 0 var(--sp-4);
+  padding-bottom: var(--sp-2);
+  border-bottom: var(--rule) solid var(--accent);
+  letter-spacing: 0.02em;
+}
+
+.toc ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: toc;
+}
+
+.toc li {
+  margin: 0;
+  padding: 0;
+}
+
+.toc a {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  text-decoration: none;
+  color: inherit;
+  padding: 1.4mm 0;
+}
+
+/* 用 ::before 画引导点：dotted 视觉近似 leader */
+.toc a::before {
+  content: "";
+  flex: 1 1 auto;
+  order: 2;
+  align-self: center;
+  height: 0;
+  margin: 0 1mm;
+  border-bottom: 0.4mm dotted var(--hairline-strong);
+  transform: translateY(0.5mm);
+}
+
+.toc .toc-text {
+  order: 1;
+  flex: 0 1 auto;
+}
+
+.toc .toc-page {
+  order: 3;
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: 9.5pt;
+  font-weight: 400;
+  min-width: 8mm;
+  text-align: right;
+}
+
+/* 页码由生成器写入；若生成器不写页码，点线自然收在文字右侧 */
+.toc .toc-page:empty {
+  display: none;
+}
+
+/* level 1 —— 章 */
+.toc-l1 > li > a {
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.toc-l1 > li + li > a {
+  border-top: 0.25pt solid var(--hairline);
+}
+
+/* level 2 —— 节：缩进 + 圆点标记 + 轻量字重 */
+.toc-l2 {
+  margin: 0 0 var(--sp-1) var(--sp-3) !important;
+  padding-left: var(--sp-3);
+  border-left: 0.25pt solid var(--hairline);
+}
+
+.toc-l2 > li > a {
+  font-size: 9.5pt;
+  font-weight: 400;
+  color: var(--secondary);
+  padding: 0.9mm 0;
+}
+
+.toc-l2 .toc-page {
+  font-size: 9pt;
+}
+
+/* ───────────────────────────── 正文容器 ───────────────────────────── */
+.content {
+  break-before: auto;
+}
+
+/* 正文不是独立页：目录与正文之间靠 .content 的起始留白过渡 */
+.content::before {
+  content: "";
+  display: block;
+  height: var(--sp-4);
+}
+
+/* ───────────────────────────── 标题 ───────────────────────────── */
+/* h1 —— 文内大分隔（"第一部分"式），也可作正文首标题 */
+.content h1 {
+  font-size: 23pt;
+  line-height: 1.30;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin: var(--sp-6) 0 var(--sp-4);
+  padding: 0 0 var(--sp-3);
+  border-bottom: var(--rule) solid var(--accent);
+  letter-spacing: -0.01em;
+  text-align: left;
+  break-before: page; /* 文内 h1 一律另起一页 */
+  page-break-before: always;
+}
+
+/* 第一个 h1 紧跟目录时不要产生空白页 */
+.content > h1:first-child {
+  margin-top: 0;
+}
+
+/* h2 —— 章标题：唯一"重"标题装置 = 色块标号 + 短强调线
+   生成器若输出 <h2><span class="h2-num">4</span> 消息抓取引擎</h2> 则出现标号；
+   纯文本 h2 也完全成立（只是少了色块）。 */
+.content h2 {
+  position: relative;
+  font-size: 15pt;
+  line-height: 1.45;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin: var(--sp-5) 0 var(--sp-3);
+  padding: 0 0 var(--sp-2) 0;
+  border-bottom: 0.25pt solid var(--hairline-strong);
+  text-align: left;
+  letter-spacing: 0.01em;
+}
+
+/* 短强调下划线：叠在细底线上，形成"重线压轻线"的层次 */
+.content h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.5pt;
+  width: 22mm;
+  height: 0.9mm;
+  background: var(--accent);
+}
+
+.h2-num {
+  display: inline-block;
+  min-width: 8mm;
+  margin-right: 2.5mm;
+  padding: 0.4mm 1.6mm 0.6mm;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 10.5pt;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  border-radius: 2pt;
+  letter-spacing: 0;
+  vertical-align: 0.06em;
+}
+
+/* h3 —— 左侧强调竖条，安静但有秩序 */
+.content h3 {
+  font-size: 12pt;
+  line-height: 1.55;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin: var(--sp-4) 0 var(--sp-2);
+  padding-left: 3mm;
+  border-left: 1.1mm solid var(--accent-l);
+  text-align: left;
+  letter-spacing: 0.01em;
+}
+
+/* h4 —— 最安静：纯加粗，可选前导小方块 */
+.content h4 {
+  font-size: 10.5pt;
+  line-height: 1.60;
+  font-weight: 700;
+  color: var(--secondary);
+  margin: var(--sp-3) 0 var(--sp-1);
+  text-align: left;
+}
+
+.content h4::before {
+  content: "";
+  display: inline-block;
+  width: 1.6mm;
+  height: 1.6mm;
+  margin-right: 1.8mm;
+  background: var(--accent-l);
+  vertical-align: 0.08em;
+}
+
+/* 标题内的锚点不继承下划线；靠字重区分层级（灰度打印安全） */
+h1 a,
+h2 a,
+h3 a,
+h4 a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: none;
+}
+
+.content h2 a {
+  border-bottom: 0.35mm solid var(--accent-l);
+}
+
+/* ───────────────────────────── 正文细节 ───────────────────────────── */
+strong,
+b {
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+/* 中文排版里「」『』已足够；斜体中文难看，改用强调色 */
+em,
+i {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--accent-d);
+}
+
+a {
+  color: var(--accent-d);
+  text-decoration: none;
+  /* 灰度打印时颜色会丢失，因此链接额外加深字重 */
+  font-weight: 600;
+  /* 链接续行时不出现半截下划线 */
+  border-bottom: 0.3pt solid var(--hairline-strong);
+}
+
+/* 长 URL / 路径允许在任意处断开 */
+.content p,
+.content li,
+.content td,
+.content th,
+.content dd,
+.content blockquote p {
+  overflow-wrap: anywhere;
+}
+
+.content code a,
+a code {
+  border-bottom: none;
+}
+
+/* 上标 / 脚注引用 */
+sup,
+sub {
+  line-height: 0;
+  font-size: 0.72em;
+}
+
+/* 键盘按键：技术文档必备 */
+kbd {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  padding: 0.2mm 1mm;
+  border: 0.25pt solid var(--hairline-strong);
+  border-bottom-width: 0.6mm;
+  border-radius: 2pt;
+  background: #fff;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+mark {
+  background: #fdf3d6;
+  color: var(--text-strong);
+  padding: 0 0.6mm;
+}
+
+/* 分隔线：极轻，用于章节内换气 */
+hr {
+  height: 0;
+  margin: var(--sp-5) 0;
+  border: 0;
+  border-top: 0.25pt solid var(--hairline);
+}
+
+/* 强调色文字工具类（生成器可用） */
+.accent {
+  color: var(--accent-d);
+  font-weight: 600;
+}
+
+/* ───────────────────────────── 列表 ───────────────────────────── */
+.content ul,
+.content ol {
+  margin: 0 0 var(--sp-2);
+  padding-left: 6.5mm;
+}
+
+.content li {
+  margin: 0 0 1.2mm;
+  padding-left: 0.5mm;
+}
+
+/* 中文列表项之间需要比英文多一点呼吸，但不必成段 */
+.content li > p {
+  margin: 0 0 1.2mm;
+}
+
+.content li:last-child {
+  margin-bottom: 0;
+}
+
+.content ul {
+  list-style-type: disc;
+}
+
+.content ul ul {
+  list-style-type: circle;
+  margin-top: 1.2mm;
+  padding-left: 5.5mm;
+}
+
+.content ul ul ul {
+  list-style-type: square;
+  margin-top: 1.2mm;
+  padding-left: 5.5mm;
+}
+
+/* 有序列表标记用强调色 —— 全文唯一允许标记着色的地方 */
+.content ol {
+  list-style-type: decimal;
+}
+
+.content ol ol {
+  list-style-type: lower-alpha;
+  margin-top: 1.2mm;
+  padding-left: 6mm;
+}
+
+.content li::marker {
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 任务列表（- [ ] / - [x]） */
+.content li.task-list-item {
+  list-style: none;
+  margin-left: -5mm;
+}
+
+/* ───────────────────────────── 引用 / 提示卡 ───────────────────────────── */
+blockquote {
+  margin: var(--sp-3) 0;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface);
+  border-left: 1.1mm solid var(--accent-l);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--secondary);
+  font-size: 10pt;
+  line-height: 1.70;
+  text-align: justify;
+}
+
+blockquote > :first-child {
+  margin-top: 0;
+}
+
+blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+blockquote p + p {
+  margin-top: var(--sp-1);
+}
+
+/* 提示卡里的行内代码不要与卡片底色撞色 */
+blockquote code {
+  background: #fff;
+}
+
+/* 警示变体：生成器把 [!WARNING] / [!NOTE] 转成
+   <blockquote class="callout callout-warn"> */
+.callout-warn,
+blockquote.warning,
+blockquote.warn {
+  background: var(--warn-bg);
+  border-left-color: var(--warn);
+  color: var(--warn-d);
+}
+
+.callout-warn strong,
+blockquote.warning strong {
+  color: var(--warn-d);
+}
+
+.callout-warn a,
+blockquote.warning a {
+  color: var(--warn-d);
+  border-bottom-color: var(--warn);
+}
+
+.callout-warn code,
+blockquote.warning code,
+blockquote.warn code {
+  background: #fff;
+  color: var(--warn-d);
+}
+
+/* 标题行：<blockquote class="callout callout-warn"><p><strong>⚠️ 注意</strong></p> */
+.callout-warn > p:first-child strong::before {
+  content: "";
+}
+
+/* ───────────────────────────── 代码 ───────────────────────────── */
+/* 生成器输出：
+   <div class="code-block"><span class="code-lang">python</span>
+     <pre><code>…</code></pre></div>
+   无 info string 时可省略 .code-lang。 */
+.code-block {
+  position: relative;
+  margin: var(--sp-3) 0;
+  /* 左强调条用 border，圆角只给右侧，避免圆角吃掉竖条 */
+  border-left: var(--code-gutter) solid var(--accent-l);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--surface);
+  /* 打印环境没有横向滚动：超出 170mm 版心的等宽行会在右缘被裁掉，
+     而不是把内容推出纸张。见文件末尾"宽代码行"说明。 */
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.code-block pre {
+  margin: 0;
+  /* 顶部留出语言标签的位置，标签绝对定位不会压到首行代码 */
+  padding: var(--sp-2) var(--sp-3) var(--sp-2) var(--sp-2);
+  /* 语言标签占位：有标签时首行下移 */
+  font-family: var(--font-mono);
+  font-size: 9pt;
+  line-height: 1.45;
+  color: var(--text);
+  /* 关键：ASCII 框图必须原样保留空格且不折行 */
+  white-space: pre;
+  tab-size: 4;
+  text-align: left;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+.code-block.with-lang pre {
+  padding-top: 6.5mm;
+}
+
+.code-block pre code {
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  white-space: inherit;
+}
+
+/* 语言标签：钉在右上角 */
+.code-lang {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 1.1mm 2.6mm;
+  font-family: var(--font-mono);
+  font-size: 7pt;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-t);
+  border-radius: 0 var(--radius) 0 var(--radius);
+}
+
+/* 极窄/极宽代码的横向收缩：整块等比缩小字号，让长行尽量留在版心内。
+   仅靠 CSS 无法按行长自适应，因此生成器可给超宽代码块加 .code-tight。 */
+.code-block.code-tight pre {
+  font-size: 7.6pt;
+  line-height: 1.35;
+}
+
+.code-block.code-tight .code-lang {
+  font-size: 6.5pt;
+}
+
+/* 生成器可加 .code-flow 让超长"流水线"说明性代码块允许折行（不含框图） */
+.code-block.code-flow pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* 带行号的代码块 */
+.code-block .line-numbers {
+  color: var(--muted);
+  user-select: none;
+}
+
+/* 行内代码 */
+.content :not(pre) > code,
+.content p code,
+.content li code,
+.content td code,
+.content th code,
+.content h3 code,
+.content h4 code {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  padding: 0.3mm 1.1mm;
+  background: var(--accent-t);
+  color: var(--accent-d);
+  border: 0;
+  border-radius: 2pt;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* 标题里的内联代码不抢戏 */
+.content h2 code,
+.content h3 code {
+  background: var(--accent-t);
+  color: var(--accent-d);
+  font-weight: 700;
+}
+
+/* ───────────────────────────── 表格 ───────────────────────────── */
+/* 三线表取向：无竖线，只有表头上下与表尾三处横线 + 极轻的行分隔 */
+table {
+  width: 100%;
+  max-width: 100%;
+  margin: var(--sp-3) 0 var(--sp-4);
+  border-collapse: collapse;
+  /* 自动布局：列宽由内容决定，中文长单元格才会让位 */
+  table-layout: auto;
+  font-size: 10pt;
+  line-height: 1.65;
+  text-align: left;
+  /* 长表允许跨页 */
+  break-inside: auto;
+}
+
+thead {
+  /* 跨页时重复表头 —— 已实测生效 */
+  display: table-header-group;
+}
+
+tfoot {
+  display: table-footer-group;
+}
+
+tr {
+  break-inside: avoid;
+}
+
+th,
+td {
+  padding: 2mm 2.4mm;
+  border: 0;
+  border-bottom: 0.25pt solid var(--hairline);
+  vertical-align: top;
+  text-align: left;
+  /* 长中文 / 长 URL / 长路径绝不撑破版心 */
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+th {
+  font-weight: 700;
+  font-size: 10pt;
+  color: var(--text-strong);
+  background: var(--accent-t);
+  /* 表头下沿重线：三线表的第二线 */
+  border-bottom: var(--rule) solid var(--accent);
+  border-top: var(--rule) solid var(--accent);
+  white-space: normal;
+}
+
+/* 斑马纹：极轻，只作行追踪辅助 */
+tbody tr:nth-child(even) td {
+  background: var(--zebra);
+}
+
+/* 表尾（如有 tfoot）加重线 */
+tfoot td {
+  border-top: var(--rule) solid var(--accent);
+  font-weight: 700;
+  background: #fff;
+}
+
+/* 表格单元格里不要 break-all：`wechat_summary_gui.py` 会被切成
+   "wechat_summar / y_gui.py"（已实测很难看）。表内长路径由生成器
+   用 .path 类显式开启断词。 */
+.content td,
+.content th {
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+/* 首列通常很短（序号 / 状态 / 文件名），允许不换行以稳住列宽；
+   但对确实很长的首列内容，生成器可给该单元格加 .wrap。 */
+table td:first-child:not(.wrap),
+table th:first-child:not(.wrap) {
+  white-space: nowrap;
+}
+
+/* 单元格工具类 */
+td.num,
+th.num {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+td.path,
+th.path,
+td.wrap,
+th.wrap {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+/* 整表选择器：首列允许换行（长中文/长路径作首列时用 .no-nowrap） */
+table.no-nowrap td:first-child,
+table.no-nowrap th:first-child {
+  white-space: normal;
+}
+
+/* 单元格里的多行内容 / 列表收紧 */
+td ul,
+td ol,
+th ul,
+th ol {
+  margin: 0;
+  padding-left: 5mm;
+}
+
+td p:last-child,
+th p:last-child {
+  margin-bottom: 0;
+}
+
+td code,
+th code {
+  white-space: normal;
+}
+
+/* 语义状态标记：不要只靠颜色，配字重 */
+.ok,
+.yes {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.bad,
+.no {
+  color: var(--bad);
+  font-weight: 700;
+}
+
+.warn-mark,
+.warn {
+  color: var(--warn);
+  font-weight: 700;
+}
+
+/* 表格标题（生成器可输出 <p class="table-caption">） */
+.table-caption {
+  font-size: 9pt;
+  color: var(--secondary);
+  margin: 0 0 var(--sp-1);
+  text-align: left;
+}
+
+/* ───────────────────────────── 图 / 无图片时的留白 ───────────────────────────── */
+figure {
+  margin: var(--sp-4) 0;
+  text-align: center;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+figcaption {
+  margin-top: var(--sp-1);
+  font-size: 9pt;
+  color: var(--secondary);
+  text-align: center;
+}
+
+/* ───────────────────────────── 附件 / 定义列表 ───────────────────────────── */
+dl {
+  margin: 0 0 var(--sp-2);
+}
+
+dt {
+  font-weight: 700;
+  color: var(--text-strong);
+  margin-top: var(--sp-2);
+}
+
+dd {
+  margin: 0 0 var(--sp-1) 0;
+  padding-left: var(--sp-3);
+  color: var(--text);
+}
+
+/* ───────────────────────────── 颜文字兜底 ───────────────────────────── */
+/* 只在正文流里出现颜文字，用 Segoe UI Emoji 兜底；
+   不放进 body 字体栈，避免整篇中文被回退到日文字形。 */
+.emoji {
+  font-family: var(--font-emoji);
+  font-style: normal;
+  font-weight: 400;
+}
+
+/* ⚠️ 这类"缺字形"标记在技术上常回退到 Segoe UI Symbol，形色偏灰；
+   如需彩色，可给这些字符单独包 <span class="emoji">。 */
+
+/* ───────────────────────────── 分页微调 ───────────────────────────── */
+/* 章标题不要孤零零留在上一页末尾 */
+.content h2 + *,
+.content h3 + *,
+.content h4 + * {
+  break-before: avoid;
+}
+
+/* 表格前的小标题与表格同页 */
+.content h3 + table,
+.content h4 + table {
+  break-before: avoid;
+}
+
+/* 参考：宽代码行
+   版心 = 210mm - 18mm - 18mm = 174mm。
+   Cascadia Mono 在 9pt 下字宽 ≈ 0.6em ≈ 1.905mm
+   → 174 / 1.905 ≈ 91 等宽字符/行（中文 2 列宽）。
+   本项目实测最宽框图 92 列，因此 9pt 是"刚好放下"的尺寸。
+   若换成 10pt，上限降到约 82 列，框图会被裁切。
+   → 超宽块请加 .code-tight（7.6pt，约 108 列），或 .code-flow 允许折行。 */
+
+/* ───────────────────────────── 屏幕预览（仅调试用） ───────────────────────────── */
+/* 打印 PDF 时不生效；浏览器打开 .html 预览时给出纸张观感。 */
+@media screen {
+  html {
+    background: #eceef1;
+  }
+
+  body {
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 12mm;
+    background: #fff;
+    box-shadow: 0 1px 14px rgba(16, 22, 31, 0.14);
+  }
+
+  .cover {
+    height: auto;
+    min-height: 200mm;
+  }
+
+  .code-block:hover {
+    background: #f1f4f7;
+  }
+}

@@ -22,7 +22,7 @@
   - `AIConfig` / `AIServiceConfig` / `ConfigCard` / `AddServiceDialog` 的类划分。
 - **`wechat_summary.py`**
   - 默认 AI 提示词的六节结构（重要提醒 / 今日热门话题 / 点评 / 待跟进事项 /
-    其他讨论话题 / 结语）—— 现已成为 18 套模板中的「通用群聊总结（原版）」；
+    其他讨论话题 / 结语）—— 现已成为 19 套模板中的「通用群聊总结（原版）」；
   - `get_wechat_messages` / `save_summary` / `send_summary` 三函数接口；
   - `summary/*.txt` 的输出格式。
 - **README 中的免责声明段落**（见 [README](../README.md#许可与免责)）。

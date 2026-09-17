@@ -6,7 +6,8 @@
 
 本版本适配微信 4.x 客户端与 wxauto4 自动化库，它提供了图形界面，并且全程只操作用户本机已经登录的微信客户端。
 
-[![Stars](https://img.shields.io/github/stars/Golden2002/wechat-summary-assistant?style=flat-square&color=0066cc)](https://github.com/Golden2002/wechat-summary-assistant/stargazers)
+[![Release](https://img.shields.io/github/v/release/Golden2002/wechat-summary-assistant?style=flat-square&color=0066cc)](https://github.com/Golden2002/wechat-summary-assistant/releases)
+[![Stars](https://img.shields.io/github/stars/Golden2002/wechat-summary-assistant?style=flat-square)](https://github.com/Golden2002/wechat-summary-assistant/stargazers)
 [![Last Commit](https://img.shields.io/github/last-commit/Golden2002/wechat-summary-assistant?style=flat-square)](https://github.com/Golden2002/wechat-summary-assistant/commits)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078d4?style=flat-square)](#环境要求)
 [![Python](https://img.shields.io/badge/python-3.9%20~%203.13-3776ab?style=flat-square)](#环境要求)
@@ -41,7 +42,8 @@
 ## 主要特性
 
 - 🔍 **本工具能够完整覆盖用户所选定的时间范围**：原版实现由于所依赖的 wxauto4 免费版缺失内部方法，只能读取当前屏幕上的少量消息；本版把消息读取层重写为滚动收集引擎，在同一批测试数据上，可读取的消息数量由 7 条提升至 95 条。
-- 🧩 **本工具内置 18 套场景化的提示词模板**：这些模板覆盖了通用、私人社交、工作协作、学习与行业、社区与运营五类场景；每一套模板都写入了“仅依据聊天记录、不得编造、缺失信息标注为『记录中未提及』”等事实性约束。
+- 🧩 **本工具内置 19 套场景化的提示词模板**：这些模板覆盖了通用、私人社交、工作协作、学习与行业、社区与运营五类场景；每一套模板都写入了“仅依据聊天记录、不得编造、缺失信息标注为『记录中未提及』”等事实性约束。
+- 📥 **本工具针对信息分享类群聊做了专门增强**：对于以转发和分享信息为主的群聊，它会把整理单位由发言人改为**信息条目**；同一条信息被多人转发时，它会将其合并为一条并注明“多人提到”，同时为每条信息保留来源与链接。
 - 🧹 **本工具会自动移除 Markdown 标记**：微信聊天窗口并不渲染 Markdown，因此本工具会把模型输出转换为纯文本，并且使用【标题】一类的记号来组织层次；预览区域所显示的内容，与最终发送出去的内容完全一致。
 - ⏱️ **本工具支持灵活的时间范围选择**：它既支持相对时间（最近 30 分钟至最近 30 天），也支持绝对时间（今天 00:00 起、昨天 00:00 起、本周一 00:00 起，以及自定义的起止时刻）。
 - 🛑 **用户可以在任务执行到一半时将其中止**：抓取一个消息量较大的群聊可能需要十几分钟，此时用户可以按 Esc 键、按空格键，或者点击「中止」按钮来停止当前任务。
@@ -121,9 +123,11 @@ py -3.12 -m venv .venv
 
 | 文档 | 主要内容 |
 | --- | --- |
-| [docs/USAGE.md](docs/USAGE.md) | 安装步骤、AI 服务与模型配置、时间范围、18 套模板、输出格式、任务中止、命令行用法 |
+| [docs/USAGE.md](docs/USAGE.md) | 安装步骤、AI 服务与模型配置、时间范围、19 套模板、输出格式、任务中止、命令行用法 |
 | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | 实测记录与故障排查：连接失败、消息读取不全、抓取速度偏慢、兼容性矩阵 |
 | [docs/TECHNICAL.md](docs/TECHNICAL.md) | 技术说明：整体架构、抓取引擎、中止机制、提示词系统、文本转换器、测试策略 |
+| [**docs/TECHNICAL.pdf**](docs/TECHNICAL.pdf) | **技术说明的 PDF 版本**（A4 版面，二十余页，带目录与页码），适合打印或者离线阅读 |
+| [CHANGELOG.md](CHANGELOG.md) | 各版本的主要变更记录 |
 | [docs/ATTRIBUTION.md](docs/ATTRIBUTION.md) | 来源与致谢：原始项目、所依赖的库、参考资料 |
 | [docs/provider-api-research-2026-09-17.md](docs/provider-api-research-2026-09-17.md) | 12 家服务与模型清单的调研记录，其中包含已下线模型的名单与各项结论的来源 |
 
@@ -135,14 +139,19 @@ py -3.12 -m venv .venv
 wechat_summary/
 ├─ wechat_summary_gui.py        图形界面入口（双击 run.bat 时所运行的文件）
 ├─ wechat_summary.py            核心逻辑：抓取消息、拼装提示词、调用模型、保存与发送
-├─ prompt_presets.py            18 套内置提示词模板（纯数据模块，修改文案时无需改动逻辑）
+├─ prompt_presets.py            19 套内置提示词模板（纯数据模块，修改文案时无需改动逻辑）
 ├─ wechat_text.py               Markdown 到微信纯文本的转换器（自带测试用例）
 ├─ wechat_uia_wake.py           微信 4.1 及以上版本的无障碍闸门热激活（可自动修复，也可独立使用）
 ├─ check_env.py                 环境自检脚本（使用 --live 参数时实际连接一次微信）
 ├─ tests/                       四套离线测试（运行时不需要微信处于运行状态）
 ├─ tools/collect_probe.py       真机抓取验证（不调用 AI，也不发送任何消息）
+├─ tools/build_docs.ps1         把技术说明编译成 PDF（Markdown 转 HTML，再打印为 PDF）
+├─ tools/md_to_html.py          文档转换器：Markdown 转成排版用 HTML
+├─ tools/render_pdf.js          调用无头 Chrome 把 HTML 打印成 PDF
+├─ tools/pdf/                   PDF 的样式表与 HTML 模板
 ├─ tools/publish_to_github.ps1  向 GitHub 发布当前提交（通过 API 完成，适用于 github.com 无法访问的网络环境）
-└─ docs/                        使用、排障、技术、来源与调研五类文档，以及界面截图
+├─ tools/release.ps1            打包源码并发布 Release（含附件上传）
+└─ docs/                        使用、排障、技术、来源与调研五类文档，界面截图，以及技术说明的 PDF
 ```
 
 ---
