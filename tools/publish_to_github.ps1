@@ -196,10 +196,21 @@ if ($tree.sha -ne $localTree) {
     Write-Host "  注意: tree SHA 与本地不同（本地 $localTree）—— 内容一致但元数据有差异" -ForegroundColor Yellow
 }
 
+# 必须带上真实的父提交，否则远端会变成一个"孤儿提交"：
+# SHA 与本地不同，历史也对不上（第一次提交恰好是根提交，所以父为空）。
+$parentParts = ((git rev-list --parents -n 1 HEAD).Trim() -split '\s+')
+$parents = @()
+if ($parentParts.Count -gt 1) { $parents = @($parentParts[1..($parentParts.Count - 1)]) }
+if ($parents.Count) {
+    Write-Host ("父提交: " + ($parents -join ', ')) -ForegroundColor DarkGray
+} else {
+    Write-Host "父提交: （根提交）" -ForegroundColor DarkGray
+}
+
 $commitBody = New-TempJson -Json (@{
     message   = $message
     tree      = $tree.sha
-    parents   = @()
+    parents   = $parents
     author    = $author
     committer = $committer
 } | ConvertTo-Json -Depth 6 -Compress)
@@ -236,8 +247,14 @@ Invoke-Gh -Method PATCH -Url "https://api.github.com/repos/$Owner/$Repo" -BodyFi
 # 而 $ErrorActionPreference = "Stop" 会把它当成致命错误。
 if (@(git remote) -contains "origin") { git remote remove origin }
 git remote add origin "https://github.com/$Owner/$Repo.git"
-git update-ref "refs/remotes/origin/$Branch" $commit.sha
-Write-Host "已设置 origin 与远端跟踪分支（本机无法 git push，请用本脚本再次发布）" -ForegroundColor DarkGray
+if ($commit.sha -eq $headSha) {
+    git update-ref "refs/remotes/origin/$Branch" $commit.sha
+    Write-Host "已设置 origin，并标记为与远端同步" -ForegroundColor DarkGray
+} else {
+    # 远端与本地 SHA 不同（比如父提交缺失导致重建不出来）时不能写跟踪引用 ——
+    # git 要求该对象在本地存在。此时本地状态仍算"未推送"，请修好脚本后重跑。
+    Write-Host "远端 commit 与本地不一致，未写入远端跟踪引用（本地仍显示未同步）" -ForegroundColor Yellow
+}
 
 Cleanup
 Write-Host "`n完成: https://github.com/$Owner/$Repo" -ForegroundColor Green
