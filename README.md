@@ -145,12 +145,15 @@ wechat_summary/
 ├─ check_env.py                 环境自检脚本（使用 --live 参数时实际连接一次微信）
 ├─ tests/                       四套离线测试（运行时不需要微信处于运行状态）
 ├─ tools/collect_probe.py       真机抓取验证（不调用 AI，也不发送任何消息）
-├─ tools/build_docs.ps1         把技术说明编译成 PDF（Markdown 转 HTML，再打印为 PDF）
-├─ tools/md_to_html.py          文档转换器：Markdown 转成排版用 HTML
+├─ tools/build_docs.ps1         把技术说明编译成 PDF（渲染插图、转 HTML，再打印为 PDF）
+├─ tools/md_to_html.py          文档转换器：把 Markdown 转成排版用 HTML，并把其中的 SVG 展开为内联矢量图
 ├─ tools/render_pdf.js          调用无头 Chrome 把 HTML 打印成 PDF
-├─ tools/pdf/                   PDF 的样式表与 HTML 模板
+├─ tools/render_diagrams.ps1    用 Mermaid 把 tools/pdf/diagrams 下的图源渲染成 docs/diagrams 下的 SVG
+├─ tools/check_diagram_fit.py   检查每张插图在 A4 版心里是否放得下、字号是否够大
+├─ tools/pdf/                   PDF 的样式表、HTML 模板与插图图源（Mermaid 文本）
 ├─ tools/publish_to_github.ps1  向 GitHub 发布当前提交（通过 API 完成，适用于 github.com 无法访问的网络环境）
 ├─ tools/release.ps1            打包源码并发布 Release（含附件上传）
+├─ tools/update_release_pdf.ps1 就地替换已发布 Release 里的技术说明 PDF（不新建版本）
 └─ docs/                        使用、排障、技术、来源与调研五类文档，界面截图，以及技术说明的 PDF
 ```
 

@@ -1,0 +1,22 @@
+%% 中止机制：GUI 线程置位取消信号，抓取线程在检查点抛出异常。
+%% 关键点是"协作式取消"——不杀线程，而是在下一次读取之前退出。
+sequenceDiagram
+    autonumber
+    participant U as 用户
+    participant G as GUI 线程
+    participant W as 抓取线程
+
+    W->>W: 定位最新一屏 / 读一屏
+    Note over W: 每轮翻页前检查取消信号
+
+    U->>G: 按 Esc、空格，或点击「中止」
+    G->>G: cancel_token.cancel()
+    Note over G: threading.Event，跨线程安全
+    G-->>U: 状态栏：正在中止……
+
+    W->>W: 在下一个检查点 raise_if_cancelled()
+    W-->>G: 抛出 JobCancelled
+    G-->>U: 状态栏：已中止
+
+    Note over U,W: 取消是确定性的：一旦请求过就不再返回结果
+    Note over W: 不中止「发送」——半截内容比让它发完更糟

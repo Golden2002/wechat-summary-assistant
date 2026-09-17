@@ -1,0 +1,26 @@
+%% 模块分层：界面层只负责收集意图与编排线程，核心层负责全部业务，
+%% 内容与工具层是可以独立复用/替换的部件。
+flowchart TB
+    subgraph L1["界面层　wechat_summary_gui.py"]
+        direction LR
+        A1["主窗口<br/>收集用户意图"] --> A2["SummaryWorker<br/>后台线程编排"] --> A3["AIConfig<br/>配置读写"]
+    end
+
+    subgraph L2["核心层　wechat_summary.py"]
+        direction LR
+        B1["抓取引擎"] --> B2["提示词拼装"] --> B3["模型调用"] --> B4["保存与发送"]
+    end
+
+    subgraph L3["内容与工具层"]
+        direction LR
+        C1["prompt_presets.py<br/>19 套提示词模板"]
+        C2["wechat_text.py<br/>Markdown 转纯文本"]
+        C3["wxauto4<br/>微信 UI 自动化"]
+        C1 ~~~ C2 ~~~ C3
+    end
+
+    L1 -- "只经由几个公开函数交互" --> L2
+    L2 -- "调用" --> L3
+
+    classDef layer fill:#F6F8FA,stroke:#C8D2DE,color:#10161F;
+    class L1,L2,L3 layer;

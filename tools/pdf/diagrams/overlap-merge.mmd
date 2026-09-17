@@ -1,0 +1,21 @@
+%% 内容重叠对齐：向上翻页时，新窗口的尾部必然与已收集结果的头部重叠。
+%% 找到最大的 m 使 新窗口[-m:] == 已收集[:m]，只并入前面真正更早的那段。
+flowchart LR
+    subgraph ACC["已收集　旧 → 新"]
+        direction LR
+        a1["m3"] --> a2["m4"] --> a3["m5"] --> a4["m6"]
+    end
+
+    subgraph WIN["新读到的一屏　旧 → 新"]
+        direction LR
+        b1["m1"] --> b2["m2"] --> b3["m3"] --> b4["m4"]
+    end
+
+    WIN -- "尾部 m3 m4<br/>与头部完全一致 → m = 2" --> MERGE{{"重叠对齐"}}
+    ACC -- "头部 m3 m4" --> MERGE
+    MERGE --> OUT["并入 m1 m2<br/>结果：m1 m2 m3 m4 m5 m6"]
+
+    classDef hl fill:#EAF0F7,stroke:#1B4F8A,color:#10161F;
+    classDef out fill:#1B4F8A,stroke:#143A66,color:#FFFFFF;
+    class a1,a2,b3,b4 hl;
+    class OUT out;

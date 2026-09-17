@@ -24,6 +24,10 @@
 
     <p class="cover-subtitle">{{SUBTITLE}}</p>
 
+    <!-- 内容提要：由生成器的 --cover-guide 提供；没有提供时这里是一段空串，
+         样式表里的 .cover-guide:empty 会整块收掉，封面退回简版。 -->
+    {{COVER_GUIDE}}
+
     <dl class="cover-meta">
       <div>
         <dt>版本 / Version</dt>
@@ -48,20 +52,21 @@
 </section>
 
 <!-- ══════════════════════════ 目录 ══════════════════════════
-     生成器产出完整的 <nav class="toc">…</nav>，形如：
+     生成器产出完整的 <nav class="toc">…</nav>，层级类挂在 <li> 上：
        <nav class="toc">
          <h2 class="toc-title">目录</h2>
-         <ol class="toc-l1">
-           <li><a href="#c1"><span class="toc-text">1. 总体设计</span>
-               <span class="toc-page"></span></a>
-             <ol class="toc-l2">
-               <li><a href="#c1-1"><span class="toc-text">目标</span>
-                   <span class="toc-page"></span></a></li>
+         <ol class="toc-list">
+           <li class="toc-l1"><a href="#c1"><span class="toc-num">1</span>
+               <span class="toc-text">总体设计</span></a>
+             <ol class="toc-sub">
+               <li class="toc-l2"><a href="#c1-1"><span class="toc-num"></span>
+                   <span class="toc-text">目标</span></a></li>
              </ol>
            </li>
          </ol>
        </nav>
-     页码可留空（.toc-page:empty 会自动隐藏），也可由 target-counter 生成。 -->
+     样式表里对应的选择器是 .toc-l1 > a（不是 .toc-l1 > li > a）；
+     没有页码，因此目录里不画任何引导线。 -->
 {{TOC}}
 
 <!-- ══════════════════════════ 正文 ══════════════════════════ -->

@@ -1,0 +1,17 @@
+%% 提示词的三层结构：模板是内容，公共约束写在代码里，运行期再补上渠道说明。
+%% 三层是"汇聚"关系而不是流水线，所以画成汇合而不是长链。
+flowchart LR
+    T["模板正文<br/>19 套选一"] --> P["最终 system prompt"]
+    D["SHARED_DISCIPLINE<br/>跨场景公共纪律"] --> P
+    R["渠道约束<br/>微信 / 文件"] --> P
+    R2["本次记录说明<br/>时间范围与条数"] --> P
+    P --> M["模型"]
+    L["聊天记录<br/>user 消息"] --> M
+    M --> O["微信可读的纯文本"]
+
+    D -. "对用户自建模板同样生效" .-> P
+
+    classDef raw fill:#EAF0F7,stroke:#1B4F8A,color:#10161F;
+    classDef out fill:#1B4F8A,stroke:#143A66,color:#FFFFFF;
+    class T,D,R,R2,L raw;
+    class O out;

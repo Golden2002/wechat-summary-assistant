@@ -43,6 +43,7 @@ function parseArgs(argv) {
     printBackground: true,
     preferCssPageSize: true,
     headerFooter: false,
+    outline: true,
     marginTop: 0.4,
     marginBottom: 0.4,
     marginLeft: 0,
@@ -59,6 +60,7 @@ function parseArgs(argv) {
       case '--scale': args.scale = Number(next()); break;
       case '--timeout': args.timeout = Number(next()); break;
       case '--header-footer': args.headerFooter = true; break;
+      case '--no-outline': args.outline = false; break;
       case '--margin-top': args.marginTop = Number(next()); break;
       case '--margin-bottom': args.marginBottom = Number(next()); break;
       default: break;
@@ -271,7 +273,18 @@ async function main() {
     printOptions.headerTemplate = headerTemplate(title);
     printOptions.footerTemplate = footerTemplate(title);
   }
-  const { data } = await cdp.send('Page.printToPDF', printOptions, sessionId);
+  // 把 h1~h6 变成 PDF 书签。阅读器左侧的导航栏靠它，比目录页更好用。
+  // 老版本 Chromium 不认识这个参数，会直接报错，因此失败时回退到不带书签再打一次。
+  if (args.outline) printOptions.generateDocumentOutline = true;
+  let data;
+  try {
+    ({ data } = await cdp.send('Page.printToPDF', printOptions, sessionId));
+  } catch (error) {
+    if (!args.outline) throw error;
+    console.warn(`[render_pdf] 生成书签失败，改为不带书签重试：${error.message}`);
+    delete printOptions.generateDocumentOutline;
+    ({ data } = await cdp.send('Page.printToPDF', printOptions, sessionId));
+  }
 
   fs.writeFileSync(outPath, Buffer.from(data, 'base64'));
   cdp.close();

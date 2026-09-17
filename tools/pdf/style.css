@@ -174,7 +174,8 @@ kbd {
     vertical-align: bottom;
     padding-bottom: 2mm;
   }
-  /* 页脚：细线 + 页码 */
+  /* 页脚：只有页码，不画线。
+     页眉没有线，页脚也不该有 —— 一条横贯版心的灰线会把每页正文从中间截断。 */
   @bottom-center {
     content: counter(page) " / " counter(pages);
     font-family: var(--font-sans);
@@ -182,7 +183,6 @@ kbd {
     color: var(--muted);
     vertical-align: top;
     padding-top: 3mm;
-    border-top: 0.25pt solid var(--hairline);
     width: 100%;
   }
 }
@@ -236,120 +236,210 @@ h4 {
 }
 
 /* ───────────────────────────── 封面 ───────────────────────────── */
-/* 双轨设计：@page :first 生效时页边距为 0，色带真正顶到纸边；
-   若某个渲染器忽略 @page :first，.cover 会落在普通版心内，
-   此时同一套留白读起来仍然是一张"页内扉页" —— 两种情形都成立，
-   不会出现半截色块。 */
+/* 版式：左侧一条 86mm 宽的深色域从纸顶贯通到纸底，右侧白区承载标题、提要
+   与元信息。色域不是装饰，它是一条结构线：x=86mm 是色域右缘，x=106mm 是
+   白区文字轴，标题、副标题、提要、元信息全部对齐到这条轴上；页脚横跨两种
+   底色，同时收住色域与白区。整页不画任何分隔线。
+   双轨设计：@page :first 生效时页边距为 0，色域顶到纸边；若渲染器忽略它，
+   同一套留白会退化成一张"页内扉页"。 */
 .cover {
-  /* 假定页面已有 18mm 边距时抵消掉它；配合 --bleed 的双向 padding 技巧，
-     盒宽在两种情形下都等于可用版心宽度，不会横向溢出。 */
+  /* 假定页面已有 18mm 边距时抵消掉它 */
   --bleed: 18mm;
-  --pad-x: 22mm; /* 期望的纸边到文字的距离 */
+  --field-w: 86mm;   /* 深色域宽度：纸宽的 41%，接近偏左的 1:1.4 分栏 */
+  --pad-in: 22mm;    /* 色域内文字距纸左边 */
+  --axis: 106mm;     /* 白区文字轴 = 色域右缘 86mm + 20mm 气口 */
+  --pad-out: 22mm;   /* 白区文字距纸右边 */
+
+  --on-dark: #ffffff;
+  --on-dark-soft: rgba(255, 255, 255, 0.78);
+  --on-dark-dim: rgba(255, 255, 255, 0.62);
+  --on-dark-ghost: rgba(255, 255, 255, 0.45);
 
   position: relative;
   display: flex;
   flex-direction: column;
-  /* 高度留出 6mm 余量：封面内容用 margin-top:auto 推到下半页，
-     若严格等于 100vh，flex 内容一旦超出就会把最后的色带挤出页面
-     （已实测：底部队列栏被裁掉）。 */
-  height: calc(100vh - 6mm);
+  /* @page :first 的零边距下，100vh 恰好等于整页高（297mm）→ 真正的全出血。
+     overflow: hidden 兜住意外溢出，避免多顶出一张空白页。 */
+  height: 100vh;
   padding: 0;
   color: var(--text-strong);
-  /* 不再使用 break-after —— 目录自带 break-before:page。
-     两个都写会在封面刚好填满一页时产生空白页。 */
+  background: #fff;
+  /* 不写 break-after：目录自带 break-before:page，两个都写会多出空白页 */
   overflow: hidden;
 }
 
-/* 零边距（page :first 生效）时 --bleed 归零：文字回到纸边 + 22mm 留白，
-   色带铺满整幅纸宽。若 :first 未生效，--bleed=18mm 抵消页边距，
-   色带铺满版心、文字距版心边 22mm。两者都干净。 */
+/* 零边距（@page :first 生效）时 --bleed 归零 */
 .cover.cover-bleed {
   --bleed: 0mm;
 }
 
-.cover::before {
-  /* 顶部深蓝色带 —— 全篇唯一的"重"色块 */
-  content: "";
-  display: block;
-  height: 13mm;
-  background: var(--accent);
-  flex: 0 0 auto;
-}
-
-/* 双向负 margin 让色带在两种 --bleed 取值下都铺到版心/纸边 */
-.cover-band {
-  margin: 0 calc(-1 * var(--bleed));
-}
-
 .cover-inner {
+  position: relative;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  padding: 24mm calc(var(--bleed) + var(--pad-x)) 0;
   min-height: 0;
 }
 
-.cover-kicker {
-  font-size: 9pt;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin: 0 0 var(--sp-2);
+/* 深色域：绝对定位铺满整页高度，压在文字之下。
+   平涂一种颜色，不用渐变 —— 满版渐变在印刷与屏幕上都容易显得脏。 */
+.cover-inner::before {
+  content: "";
+  position: absolute;
+  top: calc(-1 * var(--bleed));
+  bottom: 0;
+  left: calc(-1 * var(--bleed));
+  width: calc(var(--field-w) + var(--bleed));
+  background: var(--accent);
 }
 
+/* 文字层统一抬到色域之上 */
+.cover-kicker,
+.cover-title,
+.cover-subtitle,
+.cover-guide,
+.cover-meta {
+  position: relative;
+}
+
+/* ── 项目名：放进色域内，用宽度把文字锁在色域里，而不是靠右内边距凑 ── */
+.cover-kicker {
+  width: calc(var(--field-w) + var(--bleed));
+  margin: 54mm 0 0;
+  padding-left: calc(var(--bleed) + var(--pad-in));
+  /* 右侧只留 10mm：项目名 22 个字符带字距约 42mm，加上左侧 22mm 正好落在
+     86mm 的色域里；若右侧也留 22mm，它会被折成两行。 */
+  padding-right: 10mm;
+  font-family: var(--font-mono);
+  font-size: 7.5pt;
+  font-weight: 600;
+  /* 字距只作用在拉丁字母上；汉字一律不加字距 */
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-dark-dim);
+  white-space: nowrap;
+}
+
+/* ── 标题：白区，落在页面纵向 40% 处 ── */
 .cover-title {
-  font-size: 30pt;
-  line-height: 1.22;
+  margin: 60mm 0 0;
+  padding-left: calc(var(--bleed) + var(--axis));
+  padding-right: calc(var(--bleed) + var(--pad-out));
+  font-size: 36pt;
+  line-height: 1.16;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.01em;
   color: var(--text-strong);
-  margin: var(--sp-5) 0 0;
   text-align: left;
   break-after: avoid;
 }
 
-/* 标题下的强装置：短而厚的强调条 */
+/* 标题下的短强调条：与正文 h2 的同一种装置，但更短更稳 */
 .cover-title::after {
   content: "";
   display: block;
-  width: 42mm;
-  height: 1.6mm;
-  margin-top: 7mm;
+  width: 28mm;
+  height: 1.5mm;
+  margin-top: 8mm;
   background: var(--accent);
 }
 
 .cover-subtitle {
+  margin: 8mm 0 0;
+  padding-left: calc(var(--bleed) + var(--axis));
+  padding-right: calc(var(--bleed) + var(--pad-out));
   font-family: var(--font-serif);
-  font-size: 13pt;
-  line-height: 1.7;
+  font-size: 12.5pt;
+  line-height: 1.75;
   font-weight: 400;
   color: var(--secondary);
-  margin: var(--sp-3) 0 0;
   text-align: left;
-  /* 衬线体在无思源宋体的机器上回退到 SimSun —— 只用于这一行，可控 */
-  max-width: 120mm;
 }
 
-.cover-meta {
-  margin-top: auto; /* 把元信息块压到底部 */
-  padding-top: var(--sp-5);
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-3) var(--sp-6);
-  border-top: 0.35mm solid var(--hairline-strong);
+/* ── 内容提要：白区中段的信息主体 ──
+   它同时解决两个问题：说明这份文档回答什么，以及填住标题与元信息之间的空白。
+   生成器没有提供提要时整块为空，封面自动退回"标题 + 元信息"的简版。 */
+.cover-guide:empty {
+  display: none;
 }
 
-.cover-meta dt {
+.cover-guide {
+  margin: 16mm 0 0;
+  padding-left: calc(var(--bleed) + var(--axis));
+  padding-right: calc(var(--bleed) + var(--pad-out));
+}
+
+/* 提要小标题不用 <h2>：它会被收进 PDF 书签，混进正文章节列表里 */
+.cover-guide .cover-guide-title {
+  margin: 0 0 5mm;
+  padding: 0;
+  border: 0;
   font-size: 7.5pt;
   font-weight: 700;
   letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.cover-guide ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cover-guide li {
+  position: relative;
+  margin: 0 0 3.4mm;
+  padding-left: 5.5mm;
+  font-size: 9.5pt;
+  line-height: 1.7;
+  color: var(--text);
+  /* 白区只有 82mm 宽，长句必须在自己这一栏里换行 */
+  overflow-wrap: anywhere;
+}
+
+/* 实心小方块作条目符号：比圆点更"工程"，也比空心方框更容易印清楚 */
+.cover-guide li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 2.1mm;
+  width: 2mm;
+  height: 2mm;
+  background: var(--accent);
+}
+
+/* ── 元信息：白区只有 82mm，三栏并排会挤，因此纵向三行，
+      每行"标签在左、取值在右"，标签列固定宽度，三个取值左缘严格对齐。 ── */
+.cover-meta {
+  margin: auto 0 24mm; /* auto 沉到下部；24mm 给绝对定位的页脚让位 */
+  padding-left: calc(var(--bleed) + var(--axis));
+  padding-right: calc(var(--bleed) + var(--pad-out));
+  display: flex;
+  flex-direction: column;
+}
+
+.cover-meta > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0 4mm;
+}
+
+.cover-meta > div + div {
+  margin-top: 3.2mm;
+}
+
+.cover-meta dt {
+  flex: 0 0 24mm;
+  margin: 0;
+  font-size: 7pt;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
-  margin: 0 0 1mm;
 }
 
 .cover-meta dd {
+  flex: 1 1 auto;
   margin: 0;
   font-size: 10.5pt;
   font-weight: 600;
@@ -357,14 +447,39 @@ h4 {
   font-variant-numeric: tabular-nums;
 }
 
+.cover-meta dd code {
+  /* 项目名最长可达 26 个字符；8.5pt 等宽字体下约 47mm，正好落在取值列内不折行 */
+  font-family: var(--font-mono);
+  font-size: 8.5pt;
+  font-weight: 600;
+  color: var(--text-strong);
+  background: none;
+  border: 0;
+  padding: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ── 页脚：横跨色域与白区的一条基线，是全页唯一"跨结构"的元素 ──
+   左段压在深色域上（浅白字），右段在白区（弱灰字）。 */
 .cover-foot {
-  flex: 0 0 auto;
-  margin-top: var(--sp-5);
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: var(--sp-3);
-  font-size: 8.5pt;
+  padding: 0 calc(var(--bleed) + var(--pad-out)) 13mm
+           calc(var(--bleed) + var(--pad-in));
+  font-size: 8pt;
+}
+
+.cover-foot span:first-child {
+  color: var(--on-dark-ghost);
+}
+
+.cover-foot span:last-child {
   color: var(--muted);
 }
 
@@ -376,40 +491,84 @@ h4 {
   font-weight: 600;
 }
 
-/* 封面底部色带：与顶部呼应，收住整页 */
-.cover::after {
-  content: "";
-  display: block;
-  height: 4mm;
-  background: var(--accent-t);
-  border-top: 0.35mm solid var(--accent);
-  flex: 0 0 auto;
-}
-
 /* ───────────────────────────── 目录 ───────────────────────────── */
-/* Chromium 未实现 leader('.')，因此用"文题 + 右对齐页码列"的表格化布局。
-   条目换行时页码仍钉在右列，不会散架。 */
+/* 版式：条目多时分成两页、每页两栏，并在续页上重复一次「目录（续）」。
+   分页与分栏都由生成器按章边界计算（`_split_groups`），浏览器只负责画。
+
+   目录里没有页码（Chromium 未实现 target-counter），因此**不能出现任何引导装置**：
+   没有页码的点线，看起来就是一排横贯版心的灰线。层级只用四件事表达 ——
+   字号、字重、颜色、缩进；分栏与分组只用留白，全程不画一条线。
+   注意选择器：生成器输出的层级类挂在 <li> 上（<li class="toc-l1"><a…>），
+   所以必须写 `.toc-l1 > a`，而不是 `.toc-l1 > li > a`。 */
 .toc {
+  /* 整页节奏只由这 4 个值决定；章节增删后先调这里 */
+  --toc-lead-1: 1.55;      /* 章条目行高 */
+  --toc-lead-2: 2.15;      /* 节条目行高 —— 分两页之后有本钱把行距放开 */
+  --toc-group-gap: 10.5mm;    /* 章与章之间的分组留白 */
+  --toc-sub-gap: 1.4mm;    /* 章标题与它的第一节之间 */
+
   break-before: page;
   page-break-before: always;
-  margin: 0 0 var(--sp-5);
+  margin: 0;
 }
 
 .toc-title {
-  font-size: 15pt;
+  margin: 0;
+  font-size: 19pt;
   font-weight: 700;
   color: var(--text-strong);
-  margin: 0 0 var(--sp-4);
-  padding-bottom: var(--sp-2);
-  border-bottom: var(--rule) solid var(--accent);
   letter-spacing: 0.02em;
+}
+
+/* 标题下的短强调条：与封面、正文 h2 同一母题，
+   用它代替"标题下一整条横贯版心的分隔线" */
+.toc-title::after {
+  content: "";
+  display: block;
+  width: 26mm;
+  height: 1.4mm;
+  margin-top: 4mm;
+  background: var(--accent);
 }
 
 .toc ol {
   list-style: none;
   margin: 0;
   padding: 0;
-  counter-reset: toc;
+}
+
+/* ── 一页目录：两栏并排 ── */
+.toc-page {
+  display: flex;
+  align-items: flex-start;
+  gap: 0 14mm;
+  margin-top: 10mm;
+}
+
+.toc-page-next {
+  margin-top: 6mm;
+}
+
+/* 换页标记必须写在「目录（续）」这个标题上：它才是新一页的第一个元素。
+   若写在下面的分栏容器上，标题会孤零零地留在前一页的页尾。 */
+.toc-continued {
+  break-before: page;
+  page-break-before: always;
+  margin: 0;
+  font-size: 13pt;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.toc-list {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* 一栏之内的换行由 .toc-text 自己处理，不顶破栏宽 */
+.toc .toc-text {
+  overflow-wrap: anywhere;
 }
 
 .toc li {
@@ -419,77 +578,85 @@ h4 {
 
 .toc a {
   display: flex;
-  align-items: baseline;
-  gap: var(--sp-2);
+  align-items: baseline;   /* 编号与标题同基线，数字不会在汉字旁浮起来 */
   text-decoration: none;
   color: inherit;
-  padding: 1.4mm 0;
+  /* 正文里的 a 带一条下边框（灰度打印时用来替代颜色）。目录条目是整行的
+     flex 盒子，那条下边框会被拉成一条横贯版心的灰线 —— 38 个条目 38 条线。 */
+  border: 0;
+  font-weight: 400;        /* 全局 a 是 600，不还回来节条目会与章一样重 */
+  padding: 0;
 }
 
-/* 用 ::before 画引导点：dotted 视觉近似 leader */
-.toc a::before {
-  content: "";
-  flex: 1 1 auto;
-  order: 2;
-  align-self: center;
-  height: 0;
-  margin: 0 1mm;
-  border-bottom: 0.4mm dotted var(--hairline-strong);
-  transform: translateY(0.5mm);
+/* 编号列：固定宽度、内容右对齐 → 编号右缘齐，标题左缘也齐 */
+.toc .toc-num {
+  flex: 0 0 auto;
+  width: 11mm;
+  padding-right: 3mm;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .toc .toc-text {
-  order: 1;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-.toc .toc-page {
-  order: 3;
-  flex: 0 0 auto;
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-  font-size: 9.5pt;
-  font-weight: 400;
-  min-width: 8mm;
-  text-align: right;
+/* 没有编号的条目（如"设计取舍"）保留占位，标题不会左跳 */
+.toc .toc-num:empty {
+  visibility: hidden;
 }
 
-/* 页码由生成器写入；若生成器不写页码，点线自然收在文字右侧 */
-.toc .toc-page:empty {
-  display: none;
+/* ── 章条目（h2）：只靠留白分组，不画线 ── */
+.toc .toc-list > .toc-l1 + .toc-l1 {
+  margin-top: var(--toc-group-gap);
 }
 
-/* level 1 —— 章 */
-.toc-l1 > li > a {
-  font-size: 10.5pt;
+.toc-l1 > a {
+  font-size: 12.5pt;
   font-weight: 700;
   color: var(--text-strong);
-}
-.toc-l1 > li + li > a {
-  border-top: 0.25pt solid var(--hairline);
-}
-
-/* level 2 —— 节：缩进 + 圆点标记 + 轻量字重 */
-.toc-l2 {
-  margin: 0 0 var(--sp-1) var(--sp-3) !important;
-  padding-left: var(--sp-3);
-  border-left: 0.25pt solid var(--hairline);
+  line-height: var(--toc-lead-1);
+  padding: 2mm 0;
 }
 
-.toc-l2 > li > a {
-  font-size: 9.5pt;
+/* 目录里唯一的强调色元素：一眼数得出有哪几章 */
+.toc-l1 > a .toc-num {
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ── 节条目（h3）：整组右移 5mm；字号、字重、颜色同时降一档，
+      编号退成弱灰，于是"4.6"读起来是章号的下属，而不是另一个标题 ── */
+.toc .toc-sub {
+  margin: var(--toc-sub-gap) 0 0 5mm;
+}
+
+.toc-l2 > a {
+  font-size: 10.5pt;
   font-weight: 400;
   color: var(--secondary);
-  padding: 0.9mm 0;
+  line-height: var(--toc-lead-2);
+  padding: 0.5mm 0;
 }
 
-.toc-l2 .toc-page {
+.toc-l2 > a .toc-num {
   font-size: 9pt;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* 生成器目前不输出页码；将来若补上，空页码自动隐藏，不留占位点线 */
+.toc .toc-page:empty {
+  display: none;
 }
 
 /* ───────────────────────────── 正文容器 ───────────────────────────── */
 .content {
   break-before: auto;
+  /* 插图编号计数器：figure.diagram 自增，图注 ::before 取用 */
+  counter-reset: figure;
 }
 
 /* 正文不是独立页：目录与正文之间靠 .content 的起始留白过渡 */
@@ -676,12 +843,13 @@ mark {
   padding: 0 0.6mm;
 }
 
-/* 分隔线：极轻，用于章节内换气 */
+/* 分隔线：正文里的 `---` 只用来换气，不画线。
+   一条横贯版心的灰线会把相邻两节割成两块，跟"同一篇文档"的观感相悖；
+   章节层级已经由 h2 的标题线表达，不需要第二条线。 */
 hr {
   height: 0;
   margin: var(--sp-5) 0;
   border: 0;
-  border-top: 0.25pt solid var(--hairline);
 }
 
 /* 强调色文字工具类（生成器可用） */
@@ -1092,6 +1260,50 @@ figcaption {
   font-size: 9pt;
   color: var(--secondary);
   text-align: center;
+}
+
+/* ── 插图（Mermaid 内联 SVG） ────────────────────────────────
+   转换器把 <img src="*.svg"> 直接摊成内联 <svg>，而不是留一个外链图片。
+   这样做的唯一理由是分辨率：内联 SVG 在 PDF 里是真正的矢量路径与字形，
+   放到 800% 仍然锐利；而外链 SVG 会被 Chromium 先光栅化再嵌进 PDF，
+   缩放后立刻露齿。图注编号用 CSS 计数器生成，正文里只写标题文字。 */
+figure.diagram {
+  counter-increment: figure;
+  margin: var(--sp-5) 0 var(--sp-5);
+  padding: 0;
+  /* 插图与其图注必须同页，跨页的图注等于没写 */
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+figure.diagram svg {
+  display: block;
+  /* 固有尺寸来自 SVG 自身的 width/height 属性；这里只设上下限。
+     width/height 保持 auto，Chromium 才会在两条约束同时生效时等比缩放，
+     而不是把图塞进一个固定框里留一圈空白。 */
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  /* 高度上限 = 版心高减去图注与前后留白，防止极端长图把图注挤到下一页 */
+  max-height: 168mm;
+  margin: 0 auto;
+}
+
+figure.diagram figcaption {
+  margin-top: 2.8mm;
+  font-size: 8.6pt;
+  line-height: 1.5;
+  color: var(--muted);
+  text-align: center;
+  /* 图注与图之间只有留白，没有分隔线 */
+  border: 0;
+}
+
+figure.diagram figcaption::before {
+  content: "图 " counter(figure) "　";
+  font-weight: 700;
+  color: var(--accent-d);
+  letter-spacing: 0.02em;
 }
 
 /* ───────────────────────────── 附件 / 定义列表 ───────────────────────────── */

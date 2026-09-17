@@ -1,0 +1,70 @@
+{
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "\"Microsoft YaHei UI\", \"Microsoft YaHei\", \"PingFang SC\", \"Noto Sans CJK SC\", sans-serif",
+    "fontSize": "14px",
+
+    "background": "#FFFFFF",
+    "primaryColor": "#EAF0F7",
+    "primaryTextColor": "#10161F",
+    "primaryBorderColor": "#1B4F8A",
+    "secondaryColor": "#F6F8FA",
+    "secondaryTextColor": "#1A1F26",
+    "secondaryBorderColor": "#C8D2DE",
+    "tertiaryColor": "#FFFFFF",
+    "tertiaryTextColor": "#1A1F26",
+    "tertiaryBorderColor": "#E2E6EB",
+
+    "mainBkg": "#EAF0F7",
+    "nodeBorder": "#1B4F8A",
+    "nodeTextColor": "#10161F",
+    "textColor": "#1A1F26",
+    "titleColor": "#10161F",
+    "lineColor": "#59626E",
+    "arrowheadColor": "#59626E",
+    "edgeLabelBackground": "#FFFFFF",
+
+    "clusterBkg": "#F6F8FA",
+    "clusterBorder": "#C8D2DE",
+
+    "actorBkg": "#EAF0F7",
+    "actorBorder": "#1B4F8A",
+    "actorTextColor": "#10161F",
+    "actorLineColor": "#C8D2DE",
+    "signalColor": "#59626E",
+    "signalTextColor": "#1A1F26",
+    "labelBoxBkgColor": "#EAF0F7",
+    "labelBoxBorderColor": "#1B4F8A",
+    "labelTextColor": "#10161F",
+    "loopTextColor": "#1A1F26",
+    "noteBkgColor": "#FDF8EF",
+    "noteBorderColor": "#B4690E",
+    "noteTextColor": "#8F5309",
+    "sequenceNumberColor": "#FFFFFF",
+    "activationBkgColor": "#DCE7F3",
+    "activationBorderColor": "#1B4F8A"
+  },
+
+  "flowchart": {
+    "htmlLabels": true,
+    "curve": "basis",
+    "nodeSpacing": 38,
+    "rankSpacing": 46,
+    "padding": 10,
+    "useMaxWidth": true,
+    "diagramPadding": 8
+  },
+
+  "sequence": {
+    "useMaxWidth": true,
+    "wrap": true,
+    "width": 165,
+    "height": 42,
+    "boxMargin": 8,
+    "noteMargin": 8,
+    "messageMargin": 34,
+    "mirrorActors": false
+  },
+
+  "themeCSS": ".cluster-label .nodeLabel p, .cluster-label span { font-weight: 700 !important; letter-spacing: .02em; } .edgeLabel p { padding: 1px 3px; } .node rect, .node polygon, .node circle { stroke-width: 1.2px !important; } .edgePath .path { stroke-width: 1.2px !important; }"
+}

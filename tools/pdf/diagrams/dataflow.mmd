@@ -1,0 +1,31 @@
+%% 端到端数据流：两行四阶段。
+%% 之所以分成两行而不是一条长链：横向十连节点会让整张图宽达 1800px，
+%% 缩进 A4 版心后字号只剩不到 4pt，等于看不清。分成两行使字号回到 9pt 以上。
+flowchart TB
+    subgraph R1["输入与抓取"]
+        direction LR
+        S(["用户点击<br/>获取群聊消息"]) --> P1["① 连接<br/>切群并校验群名"]
+        P1 --> P2["② 收集<br/>逐屏上翻<br/>内容重叠对齐"]
+        P2 --> P3["③ 裁剪<br/>按时间归属<br/>拼出旧 → 新"]
+    end
+
+    subgraph R2["处理与输出"]
+        direction LR
+        P4["④ 渲染<br/>文本行 + 时间锚点"] --> P5["⑤ 拼装提示词<br/>模板 + 纪律 + 渠道"]
+        P5 --> P6["⑥ 生成<br/>调用模型<br/>超长先分块"]
+        P6 --> P7["⑦ 输出<br/>转为微信纯文本"]
+    end
+
+    P3 --> P4
+    P7 --> O1["保存为本地文件"]
+    P7 --> O2["发送回群聊"]
+
+    P2 -. "进度回调" .-> N["状态栏<br/>第 N 屏 / 已读 M 条"]
+    S -. "取消信号" .-> X["CancelToken<br/>在检查点生效"]
+    X -.-> P2
+    X -.-> P6
+
+    classDef term fill:#1B4F8A,stroke:#143A66,color:#FFFFFF;
+    classDef side fill:#FDF8EF,stroke:#B4690E,color:#8F5309;
+    class S term;
+    class N,X side;
